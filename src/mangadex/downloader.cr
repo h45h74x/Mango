@@ -387,22 +387,16 @@ module MangaDex
 
     private def download_page(job : PageJob)
       Logger.debug "downloading #{job.url}"
-      headers = HTTP::Headers{
-        "User-agent" => "Mangadex.cr",
-      }
-      begin
-        HTTP::Client.get job.url, headers do |res|
-          unless res.success?
-            raise "Failed to download page #{job.url}. " \
-                  "[#{res.status_code}] #{res.status_message}"
-          end
-          job.writer.add job.filename, res.body_io
-        end
-        job.success = true
-      rescue e
-        Logger.error e
-        job.success = false
+      res = @api.raw_get job.url, verify_ssl: false
+      unless res.success?
+        raise "Failed to download page #{job.url}. " \
+              "[#{res.status_code}] #{res.status_message}"
       end
+      job.writer.add job.filename, res.body
+      job.success = true
+    rescue e
+      Logger.error e
+      job.success = false
     end
   end
 end

@@ -147,11 +147,22 @@ module MangaDex
       end
     end
 
-    def get(url)
+    def raw_get(url, *, verify_ssl = true)
       headers = HTTP::Headers{
         "User-agent" => "Mangadex.cr",
       }
-      res = HTTP::Client.get url, headers
+      uri = URI.parse url
+      path = uri.path
+      uri.path = "/"
+      client = HTTP::Client.new uri
+      if client.tls? && !verify_ssl
+        client.tls.verify_mode = OpenSSL::SSL::VerifyMode::NONE
+      end
+      client.get path, headers
+    end
+
+    def get(url)
+      res = raw_get url
       raise "Failed to get #{url}. [#{res.status_code}] " \
             "#{res.status_message}" if !res.success?
       JSON.parse res.body
